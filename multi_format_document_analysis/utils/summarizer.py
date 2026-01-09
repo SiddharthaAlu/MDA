@@ -5,10 +5,11 @@ from nltk.tokenize import sent_tokenize
 
 nltk.download("punkt")
 
-def professional_summary(text, ratio=0.3):
+def professional_summary(text, ratio=0.15, max_sentences=4):
     sentences = sent_tokenize(text)
 
-    if len(sentences) < 5:
+    # Very small documents → return as-is
+    if len(sentences) <= max_sentences:
         return text
 
     vectorizer = TfidfVectorizer(
@@ -17,12 +18,16 @@ def professional_summary(text, ratio=0.3):
     )
 
     X = vectorizer.fit_transform(sentences)
-    scores = np.array(X.sum(axis=1)).ravel()
+    scores = X.sum(axis=1).A1
 
+    # Rank sentences by importance
     ranked_idx = scores.argsort()[::-1]
-    top_n = max(5, int(len(sentences) * ratio))
+
+    # Decide how many sentences to keep
+    top_n = min(max_sentences, max(2, int(len(sentences) * ratio)))
 
     selected = sorted(ranked_idx[:top_n])
-    summary = " ".join([sentences[i] for i in selected])
+    summary = " ".join(sentences[i] for i in selected)
 
     return summary
+
